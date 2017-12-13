@@ -23,7 +23,6 @@ func main() {
 		os.Exit(1)
 	}
 	localVersion, err := getLocalVersion() // getLocalVersion()
-	// localVersion, err := "1.21.0", nil
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -42,7 +41,12 @@ func main() {
 	} else {
 		fmt.Println("Found newer version: " + latestVersion)
 		fmt.Println("Downloading latest version...")
-		downloadFile(downloadLink)
+		done := make(chan bool)
+		go func() {
+			downloadFile(downloadLink)
+			done <- true
+		}()
+		statusBar(done)
 		fmt.Println("\nDownload successfully completed")
 		fmt.Println("Unpacking atom...")
 		unpackFile()
@@ -76,7 +80,8 @@ func parsePage(page string) (string, string, error) {
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h1" {
 			for _, attr := range n.Attr {
-				if attr.Key == "class" && attr.Val == "release-title" {
+				match, _ := regexp.MatchString("release-title", attr.Val)
+				if attr.Key == "class" && match {
 					version = n.FirstChild.NextSibling.FirstChild.Data
 					break
 				}
@@ -123,7 +128,6 @@ func getLatestReleasePage() (string, error) {
 // downloadFile prints the usual `atom-amd64.deb` into
 // a file created in `/tmp/atom_latest.deb`
 func downloadFile(downloadLink string) {
-	go statusBar()
 	output, err := os.Create("/tmp/atom_latest.deb")
 	if err != nil {
 		fmt.Println("Can't create file...")
@@ -138,7 +142,6 @@ func downloadFile(downloadLink string) {
 	}
 	defer resp.Body.Close()
 
-	go statusBar()
 	n, err := io.Copy(output, resp.Body)
 	if err != nil {
 		fmt.Println("Error while downloading...")
@@ -162,11 +165,20 @@ func unpackFile() {
 	fmt.Println("New version " + version + " installed !\nHave a nice day ! ;-)")
 }
 
-func statusBar() {
+func statusBar(done <-chan bool) {
 	start := ">\r"
 	str := start
+	var stop bool
 	for {
-		time.Sleep(time.Second)
+		select {
+		case <-done:
+			stop = true
+		default:
+			time.Sleep(time.Second)
+		}
+		if stop {
+			break
+		}
 		append := "="
 		str = append + str
 		if len(str) == 20 {
@@ -174,4 +186,5 @@ func statusBar() {
 		}
 		fmt.Print(str)
 	}
+	fmt.Println()
 }

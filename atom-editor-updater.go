@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -69,10 +68,10 @@ func getLocalVersion() (string, error) {
 
 // parsePage parses the page from `https://github.com/atom/atom/releases/latest`
 // and retrieves the version number and the download link
-func parsePage(page string) (string, string, error) {
+func parsePage(page io.Reader) (string, string, error) {
 	var version string
 	var link string
-	doc, err := html.Parse(strings.NewReader(page))
+	doc, err := html.Parse(page)
 	if err != nil {
 		return "", "", fmt.Errorf("Error while Parsing File: " + err.Error())
 	}
@@ -112,17 +111,12 @@ func parsePage(page string) (string, string, error) {
 
 // getLatestReleasePage gets the html file provided
 // from `https://github.com/atom/atom/releases/latest` page
-func getLatestReleasePage() (string, error) {
+func getLatestReleasePage() (io.Reader, error) {
 	resp, err := http.Get("https://github.com/atom/atom/releases/latest")
 	if err != nil {
-		return "", fmt.Errorf("Can't get connection")
+		return nil, fmt.Errorf("Can't get connection")
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("Can't get page body")
-	}
-	return string(body), nil
+	return resp.Body, nil
 }
 
 // downloadFile prints the usual `atom-amd64.deb` into

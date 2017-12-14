@@ -18,10 +18,8 @@ import (
 func main() {
 	fmt.Println("Searching Atom versions...")
 	page, err := getLatestReleasePage()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	checkError(err, err.Error())
+
 	localVersion, err := getLocalVersion() // getLocalVersion()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -31,10 +29,7 @@ func main() {
 	}
 
 	latestVersion, downloadLink, err := parsePage(page)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	checkError(err, err.Error())
 
 	if localVersion == latestVersion {
 		fmt.Println("You're already up-to-date !")
@@ -124,24 +119,16 @@ func getLatestReleasePage() (io.Reader, error) {
 // a file created in `/tmp/atom_latest.deb`
 func downloadFile(downloadLink string) {
 	output, err := os.Create("/tmp/atom_latest.deb")
-	if err != nil {
-		fmt.Println("Can't create file...")
-		os.Exit(1)
-	}
+	checkError(err, "Can't create file...")
 	defer output.Close()
 
 	resp, err := http.Get(downloadLink)
-	if err != nil {
-		fmt.Println("Can't get file...")
-		os.Exit(1)
-	}
+	checkError(err, "Can't get file...")
 	defer resp.Body.Close()
 
 	n, err := io.Copy(output, resp.Body)
-	if err != nil {
-		fmt.Println("Error while downloading...")
-		os.Exit(1)
-	}
+	checkError(err, "Error while downloading...")
+
 	fmt.Printf("\n%d/%d bytes downloaded.\n", n, resp.ContentLength)
 }
 
@@ -149,14 +136,11 @@ func downloadFile(downloadLink string) {
 func unpackFile() {
 	cmd := exec.Command("/bin/bash", "-c", "sudo dpkg --install /tmp/atom_latest.deb")
 	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Can't unpack file...")
-		os.Exit(1)
-	}
+	checkError(err, "Can't unpack file...")
+
 	version, err := getLocalVersion()
-	if err != nil {
-		fmt.Println(err)
-	}
+	checkError(err, err.Error())
+
 	fmt.Printf("New version %v installed !\nHave a nice day ! ;-)\n", version)
 }
 
@@ -182,4 +166,11 @@ func statusBar(done <-chan bool) {
 		}
 	}
 	fmt.Println()
+}
+
+func checkError(err error, msg interface{}) {
+	if err != nil {
+		fmt.Println(msg)
+		os.Exit(1)
+	}
 }

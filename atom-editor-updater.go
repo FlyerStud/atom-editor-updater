@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,7 +60,7 @@ func getLocalVersion() (string, error) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("Atom Editor is not installed")
+		return "", errors.New("Atom Editor is not installed")
 	}
 	result := strings.SplitN(out.String(), "\n", 2)[0]
 	result = strings.SplitN(result, ":", 2)[1]
@@ -73,7 +74,7 @@ func parsePage(page io.Reader) (string, string, error) {
 	var link string
 	doc, err := html.Parse(page)
 	if err != nil {
-		return "", "", fmt.Errorf("Error while Parsing File: " + err.Error())
+		return "", "", fmt.Errorf("Error while Parsing File: %v", err.Error())
 	}
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -104,7 +105,7 @@ func parsePage(page io.Reader) (string, string, error) {
 	}
 	f(doc)
 	if version == "" || link == "" {
-		return "", "", fmt.Errorf("HTML has changed, update your code")
+		return "", "", errors.New("HTML has changed, update your code")
 	}
 	return version, link, nil
 }
@@ -114,7 +115,7 @@ func parsePage(page io.Reader) (string, string, error) {
 func getLatestReleasePage() (io.Reader, error) {
 	resp, err := http.Get("https://github.com/atom/atom/releases/latest")
 	if err != nil {
-		return nil, fmt.Errorf("Can't get connection")
+		return nil, errors.New("Can't get connection")
 	}
 	return resp.Body, nil
 }
@@ -149,14 +150,14 @@ func unpackFile() {
 	cmd := exec.Command("/bin/bash", "-c", "sudo dpkg --install /tmp/atom_latest.deb")
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println("Can't execute unpack...")
+		fmt.Println("Can't unpack file...")
 		os.Exit(1)
 	}
 	version, err := getLocalVersion()
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("New version " + version + " installed !\nHave a nice day ! ;-)")
+	fmt.Printf("New version %v installed !\nHave a nice day ! ;-)\n", version)
 }
 
 func statusBar(done <-chan bool) {
@@ -173,12 +174,12 @@ func statusBar(done <-chan bool) {
 		if stop {
 			break
 		}
+		fmt.Print(str)
 		append := "="
-		str = append + str
+		str = fmt.Sprintf("%v%v", append, str)
 		if len(str) == 20 {
 			str = start
 		}
-		fmt.Print(str)
 	}
 	fmt.Println()
 }

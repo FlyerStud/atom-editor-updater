@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/air1bzz/atom-editor-updater?status.svg)](https://godoc.org/github.com/air1bzz/atom-editor-updater)
+
 # atom-editor-updater
 
 [atom-editor-updater](https://github.com/air1bzz/atom-editor-updater) is a simple

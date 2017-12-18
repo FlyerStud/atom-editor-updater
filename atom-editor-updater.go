@@ -39,12 +39,14 @@ func main() {
 	} else {
 		fmt.Println("Found newer version: " + latestVersion)
 		fmt.Println("Downloading latest version...")
+
 		done := make(chan bool)
 		go func() {
 			downloadFile(downloadLink)
 			done <- true
 		}()
 		statusBar(done)
+
 		fmt.Println("\nDownload successfully completed")
 		fmt.Println("Unpacking atom...")
 		unpackFile()
@@ -56,12 +58,14 @@ func getLocalVersion() (string, error) {
 	cmd := exec.Command("atom", "--version")
 	var out bytes.Buffer
 	cmd.Stdout = &out
+
 	err := cmd.Run()
 	if err != nil {
 		return "", errors.New("Atom Editor is not installed")
 	}
 	result := strings.SplitN(out.String(), "\n", 2)[0]
 	result = strings.SplitN(result, ":", 2)[1]
+
 	return strings.TrimSpace(result), nil
 }
 
@@ -70,10 +74,12 @@ func getLocalVersion() (string, error) {
 func parsePage(page io.Reader) (string, string, error) {
 	var version string
 	var link string
+
 	doc, err := html.Parse(page)
 	if err != nil {
 		return "", "", fmt.Errorf("Error while Parsing File: %v", err.Error())
 	}
+
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h1" {
@@ -101,10 +107,12 @@ func parsePage(page io.Reader) (string, string, error) {
 			f(c)
 		}
 	}
+
 	f(doc)
 	if version == "" || link == "" {
 		return "", "", errors.New("HTML has changed, update your code")
 	}
+
 	return version, link, nil
 }
 
@@ -115,6 +123,7 @@ func getLatestReleasePage() (io.Reader, error) {
 	if err != nil {
 		return nil, errors.New("Can't get connection")
 	}
+
 	return resp.Body, nil
 }
 

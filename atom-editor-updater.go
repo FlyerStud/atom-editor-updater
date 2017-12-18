@@ -18,18 +18,21 @@ import (
 func main() {
 	fmt.Println("Searching Atom versions...")
 	page, err := getLatestReleasePage()
-	checkError(err, err.Error())
+	if err != nil {
+		checkError(err, err.Error())
+	}
 
 	localVersion, err := getLocalVersion() // getLocalVersion()
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		checkError(err, err.Error())
 	} else {
 		fmt.Println("Found local version: " + localVersion)
 	}
 
 	latestVersion, downloadLink, err := parsePage(page)
-	checkError(err, err.Error())
+	if err != nil {
+		checkError(err, err.Error())
+	}
 
 	if localVersion == latestVersion {
 		fmt.Println("You're already up-to-date !")
@@ -119,15 +122,21 @@ func getLatestReleasePage() (io.Reader, error) {
 // a file created in `/tmp/atom_latest.deb`
 func downloadFile(downloadLink string) {
 	output, err := os.Create("/tmp/atom_latest.deb")
-	checkError(err, "Can't create file...")
+	if err != nil {
+		checkError(err, "Can't create file...")
+	}
 	defer output.Close()
 
 	resp, err := http.Get(downloadLink)
-	checkError(err, "Can't get file...")
+	if err != nil {
+		checkError(err, "Can't get file...")
+	}
 	defer resp.Body.Close()
 
 	n, err := io.Copy(output, resp.Body)
-	checkError(err, "Error while downloading...")
+	if err != nil {
+		checkError(err, "Error while downloading...")
+	}
 
 	fmt.Printf("\n%d/%d bytes downloaded.\n", n, resp.ContentLength)
 }
@@ -136,10 +145,14 @@ func downloadFile(downloadLink string) {
 func unpackFile() {
 	cmd := exec.Command("/bin/bash", "-c", "sudo dpkg --install /tmp/atom_latest.deb")
 	err := cmd.Run()
-	checkError(err, "Can't unpack file...")
+	if err != nil {
+		checkError(err, "Can't unpack file...")
+	}
 
 	version, err := getLocalVersion()
-	checkError(err, err.Error())
+	if err != nil {
+		checkError(err, err.Error())
+	}
 
 	fmt.Printf("New version %v installed !\nHave a nice day ! ;-)\n", version)
 }
@@ -169,8 +182,6 @@ func statusBar(done <-chan bool) {
 }
 
 func checkError(err error, msg interface{}) {
-	if err != nil {
-		fmt.Println(msg)
-		os.Exit(1)
-	}
+	fmt.Println(msg)
+	os.Exit(1)
 }

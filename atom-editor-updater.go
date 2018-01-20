@@ -168,9 +168,10 @@ func unpackFile() {
 
 func statusBar(done <-chan bool) {
 	start := ">\r"
-	str := start
+	waitLine := start
 	var stop bool
 	for {
+		fmt.Print(waitLine)
 		select {
 		case <-done:
 			stop = true
@@ -180,11 +181,10 @@ func statusBar(done <-chan bool) {
 		if stop {
 			break
 		}
-		fmt.Print(str)
 		append := "="
-		str = fmt.Sprintf("%v%v", append, str)
-		if len(str) == 20 {
-			str = start
+		waitLine = fmt.Sprintf("%v%v", append, waitLine)
+		if len(waitLine) == 20 {
+			waitLine = start
 		}
 	}
 	fmt.Println()
